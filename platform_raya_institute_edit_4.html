@@ -130,19 +130,19 @@
                     <p class="text-slate-500 mt-1">لقد قمت بإتمام محاولتك الوحيدة بنجاح وتم حفظ درجتك.</p>
                 </div>
 
-                <!-- <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 max-w-sm mx-auto space-y-3 text-right"> -->
-                    <!-- <div class="flex justify-between items-center"> -->
-                        <!-- <span class="text-slate-500 font-semibold">درجتك</span> -->
-                        <!-- <strong id="res-score" class="text-2xl font-black text-[#044e33]">-</strong> -->
-                    <!-- </div> -->
-                    <!-- <div class="flex justify-between items-center border-t border-slate-200 pt-3"> -->
-                        <!-- <span class="text-slate-500 font-semibold">النسبة المئوية</span> -->
-                        <!-- <strong id="res-percentage" class="text-lg text-slate-900">-</strong> -->
-                    <!-- </div> -->
-                    <!-- <div class="flex justify-between items-center border-t border-slate-200 pt-3"> -->
-                        <!-- <span class="text-slate-500 font-semibold">النتيجة</span> -->
-                        <!-- <span id="res-status" class="font-bold">-</span> -->
-                    <!-- </div> -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 max-w-sm mx-auto space-y-3 text-right">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500 font-semibold">درجتك</span>
+                        <strong id="res-score" class="text-2xl font-black text-[#044e33]">-</strong>
+                    </div>
+                    <div class="flex justify-between items-center border-t border-slate-200 pt-3">
+                        <span class="text-slate-500 font-semibold">النسبة المئوية</span>
+                        <strong id="res-percentage" class="text-lg text-slate-900">-</strong>
+                    </div>
+                    <div class="flex justify-between items-center border-t border-slate-200 pt-3">
+                        <span class="text-slate-500 font-semibold">النتيجة</span>
+                        <span id="res-status" class="font-bold">-</span>
+                    </div>
                 </div>
                 <p id="res-sync" class="hidden text-xs font-bold"></p>
             </div>
@@ -152,7 +152,7 @@
             <div id="admin-login-modal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                 <div class="bg-white text-slate-800 w-full max-w-md rounded-3xl shadow-2xl p-6 space-y-5 animate-fade-in border border-amber-500/40">
                     <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                        <h3 class="font-bold text-lg text-slate-900">تسجيل دخول المطور</h3>
+                        <h3 class="font-bold text-lg text-slate-900">تسجيل دخول المعلم</h3>
                         <button onclick="closeAdminLoginModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl">&times;</button>
                     </div>
                     <form onsubmit="verifyAdmin(event)" class="space-y-4">
@@ -180,7 +180,7 @@
                 <div class="bg-white text-slate-800 w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-amber-500/40">
                     <!-- Admin Header -->
                     <div class="bg-[#044e33] text-white p-4 flex justify-between items-center border-b border-amber-500/30">
-                        <h3 class="font-bold text-lg">لوحة تحكم المطور (نتائج الطلاب)</h3>
+                        <h3 class="font-bold text-lg">لوحة تحكم المعلم (نتائج الطلاب)</h3>
                         <button onclick="closeAdminPanel()" class="text-slate-200 hover:text-white font-bold text-xl">&times;</button>
                     </div>
 
@@ -237,18 +237,17 @@
            ===================================================== */
         // ضع هنا رابط الـ Web App الناتج من Google Apps Script (ينتهي بـ /exec).
         // لو تركته فارغاً تعمل المنصة محلياً فقط (localStorage) بدون ربط بـ Google Sheet.
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwf7Kr50mcocnTXw2gdzFNxnPE-lW9XDB9OSadkamxIbrSL5XhTl9fi5pHvjmRO8KdaEA/exec";
+        const SCRIPT_URL = "";
 
         const POINTS_PER_QUESTION = 1;   // كل سؤال بدرجة واحدة
         const PASS_PERCENT = 50;         // نسبة النجاح
         const LOGIN_ANIM_MS = 3000;      // مدة أنيميشن زر الدخول (3 ثوانٍ)
         const USE_SERVER = SCRIPT_URL.trim() !== "";
+
         const LS_RESULTS = 'raya_exam_results';
         const LS_PENDING = 'raya_pending_results';
 
-        // عند ربط الـ Google Sheet تُستبدل هذه الأسئلة بأسئلة تبويب "الأسئلة" عند دخول الطالب.
-        // وتبقى هذه النسخة تعمل فقط في الوضع المحلي (SCRIPT_URL فارغ).
-        let questions = [
+        const questions = [
             {
                 id: 1,
                 type: "mcq",
@@ -332,16 +331,6 @@
         const apiPost = payload => fetchJson(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
         const apiCheck = code => fetchJson(`${SCRIPT_URL}?action=check&code=${encodeURIComponent(code)}`);
 
-        // جلب الأسئلة من تبويب "الأسئلة" في الشيت. يرجع مصفوفة أسئلة، أو null عند الفشل.
-        async function fetchQuestions() {
-            if (!USE_SERVER) return questions;   // وضع محلي: الأسئلة المكتوبة في الملف
-            const r = await fetchJson(`${SCRIPT_URL}?action=questions&_=${Date.now()}`);
-            if (!r || !r.ok || !Array.isArray(r.questions) || r.questions.length === 0) {
-                throw new Error('no_questions');
-            }
-            return r.questions;
-        }
-
         /* ===== عرض الأسئلة ===== */
         function loadQuestions() {
             const container = document.getElementById('questions-container');
@@ -353,7 +342,7 @@
                     optionsHtml += `
                         <label class="flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 hover:bg-emerald-50/50 hover:border-[#044e33] transition cursor-pointer">
                             <input type="radio" name="q_${q.id}" value="${optIndex}" required class="w-4 h-4 text-[#044e33] focus:ring-[#044e33]">
-                            <span class="text-slate-800 font-semibold">${esc(opt)}</span>
+                            <span class="text-slate-800 font-semibold">${opt}</span>
                         </label>
                     `;
                 });
@@ -364,7 +353,7 @@
                             <span class="bg-emerald-100 text-[#044e33] text-xs font-bold px-3 py-1 rounded-md">السؤال ${index + 1} (${q.type === 'mcq' ? 'اختر من متعدد' : 'صح وخطأ'})</span>
                             <span class="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1 rounded-md">${POINTS_PER_QUESTION} درجة</span>
                         </div>
-                        <h3 class="font-bold text-slate-900 text-lg">${esc(q.question)}</h3>
+                        <h3 class="font-bold text-slate-900 text-lg">${q.question}</h3>
                         <div class="space-y-2.5 mt-2">
                             ${optionsHtml}
                         </div>
@@ -446,9 +435,8 @@
             ].map(([ms, txt]) => setTimeout(() => { textEl.textContent = txt; }, ms));
 
             // نفّذ التحقق + انتظر انتهاء الأنيميشن (3 ثوانٍ كحد أدنى) معاً
-            const [used, loadedQuestions] = await Promise.all([
+            const [used] = await Promise.all([
                 isCodeUsed(code).catch(() => null),
-                fetchQuestions().catch(() => null),
                 sleep(LOGIN_ANIM_MS)
             ]);
 
@@ -466,13 +454,6 @@
                 errorEl.classList.remove('hidden');
                 return;
             }
-
-            if (!loadedQuestions) {
-                errorEl.innerText = 'تعذر تحميل أسئلة الاختبار. تأكد من الإنترنت ثم أعد المحاولة، أو تواصل مع المعلم.';
-                errorEl.classList.remove('hidden');
-                return;
-            }
-            questions = loadedQuestions;
 
             currentStudent.name = name;
             currentStudent.code = code;
